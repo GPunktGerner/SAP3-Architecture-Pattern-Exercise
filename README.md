@@ -15,7 +15,7 @@ Der Chat-Client sendet und empfängt Nachrichten vom Server. Der Server verarbei
 
 ---
 
-## Version 2 – Event-Driven-Architektur
+## Version 2 – Event-Driven-Architektur (nur Konzept)
 
 Der Chat-Client und das Backend kommunizieren nicht direkt miteinander. Stattdessen veröffentlicht der Client Daten an einen Message Broker. Der Server verarbeitet die eingehenden Nachrichten und veröffentlicht eine bearbeitete Version erneut im Message Broker. Die Clients können die Nachrichten abonnieren.
 

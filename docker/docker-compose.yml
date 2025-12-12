@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    environment:
+      # KRaft Modus aktivieren
+      KAFKA_KRAFT_MODE: "true"
+
+      # Node ID
+      KAFKA_NODE_ID: 1
+
+      # Rollen: Broker + Controller
+      KAFKA_PROCESS_ROLES: "broker,controller"
+
+      # Controller-Quorum
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+
+      # Listener für Clients und Controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+
+      # Controller Listener Names (muss in KAFKA_LISTENERS enthalten sein)
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Security Protokoll für Listener
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+      # Advertised Listener für Clients
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # Testfreundlich
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+    ports:
+      - "9092:9092" # Clients
+      - "9093:9093" # Controller intern

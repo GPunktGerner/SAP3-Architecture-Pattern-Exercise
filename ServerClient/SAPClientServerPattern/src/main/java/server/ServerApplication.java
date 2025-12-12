@@ -2,8 +2,12 @@ package server;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class ServerApplication {
+
+    private static final Map<String, PrintWriter> clients =
+            Collections.synchronizedMap(new HashMap<>());
 
     public static void main(String[] args) {
         System.out.println("Server started...");
@@ -24,23 +28,67 @@ public class ServerApplication {
 
     private static class ClientHandler extends Thread {
         private final Socket socket;
+        private PrintWriter out;
+        private BufferedReader in;
+        private String clientName;
 
         public ClientHandler(Socket socket) {
             this.socket = socket;
         }
 
+        @Override
         public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-                String message;
+            try {
+                in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
 
-                while ((message = in.readLine()) != null) {
-                    System.out.println("Received from " + socket + ": " + message);
-                    out.println("Server response: " + message);
+                out.println("Enter your name:");
+                clientName = in.readLine();
+
+                if (clientName == null || clientName.trim().isEmpty()) {
+                    out.println("Invalid name. Disconnecting.");
+                    socket.close();
+                    return;
+                }
+
+                synchronized (clients) {
+                    clients.put(clientName, out);
+                }
+
+                out.println("Welcome, " + clientName + "!");
+
+                String msg;
+                while ((msg = in.readLine()) != null) {
+                    System.out.println(clientName + " says: " + msg);
+
+                    if (msg.contains(":")) {
+                        String[] parts = msg.split(":", 2);
+                        String target = parts[0].trim();
+                        String text   = parts[1].trim();
+
+                        PrintWriter targetWriter = clients.get(target);
+
+                        if (targetWriter != null) {
+                            targetWriter.println(clientName + " → you: " + text);
+                        } else {
+                            out.println("Server: Client '" + target + "' not found.");
+                        }
+
+                    } else {
+                        out.println("Server echo: " + msg);
+                    }
                 }
 
             } catch (IOException e) {
-                System.out.println("Client disconnected: " + socket);
+                System.out.println("Connection with " + clientName + " lost.");
+            } finally {
+                try { socket.close(); } catch (IOException ignored) {}
+
+                synchronized (clients) {
+                    clients.remove(clientName);
+                }
+
+                System.out.println("Client disconnected: " + clientName);
             }
         }
     }
